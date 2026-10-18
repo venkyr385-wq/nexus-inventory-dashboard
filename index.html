@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS - Product Inventory & Analytics Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i data-lucide="hexagon" class="logo-icon text-violet"></i>
+                    <h2>NEXUS</h2>
+                </div>
+                <button id="toggle-sidebar" class="icon-btn d-mobile-only"><i data-lucide="x"></i></button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#" class="nav-link active" data-view="dashboard-view"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+                    <li><a href="#" class="nav-link" data-view="inventory-view"><i data-lucide="package"></i> Inventory</a></li>
+                    <li><a href="#" class="nav-link" data-view="analytics-view"><i data-lucide="bar-chart-2"></i> Analytics</a></li>
+                    <li><a href="#" class="nav-link" data-view="concepts-lab-view"><i data-lucide="flask-conical"></i> JS Concepts Lab</a></li>
+                </ul>
+                
+                <div class="sidebar-footer">
+                    <h4>Actions</h4>
+                    <ul>
+                        <li><a href="#" id="nav-add-product"><i data-lucide="plus-circle"></i> Add Product</a></li>
+                        <li><a href="#" id="nav-export-csv"><i data-lucide="download"></i> Export CSV</a></li>
+                        <li><a href="#" id="nav-reset-data" class="text-danger"><i data-lucide="refresh-cw"></i> Reset Data</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Navigation -->
+            <header class="top-nav">
+                <div class="nav-left">
+                    <button id="mobile-menu-btn" class="icon-btn d-mobile"><i data-lucide="menu"></i></button>
+                    <div class="search-bar">
+                        <i data-lucide="search"></i>
+                        <input type="text" id="global-search" placeholder="Search inventory (Ctrl+K)...">
+                    </div>
+                </div>
+                
+                <div class="nav-right">
+                    <div class="clock-display text-secondary" id="live-clock" style="margin-right: 16px; font-variant-numeric: tabular-nums; font-weight: 500; font-size: 0.9rem;">
+                        --:--:--
+                    </div>
+                    <button id="quick-add-btn" class="btn btn-outline" title="Quick Add via Prompt">
+                        <i data-lucide="zap"></i> Quick Add
+                    </button>
+                    <button id="theme-toggle" class="icon-btn" title="Toggle Theme">
+                        <i data-lucide="moon"></i>
+                    </button>
+                    <button class="icon-btn notification-btn">
+                        <i data-lucide="bell"></i>
+                        <span class="badge" id="alert-badge">0</span>
+                    </button>
+                    <div class="profile">
+                        <div class="avatar">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="views-container">
+                <!-- Dashboard View -->
+                <section id="dashboard-view" class="view-section active">
+                    <div class="welcome-section">
+                        <div>
+                            <h1 id="greeting-title">Welcome back, Admin</h1>
+                            <p class="text-secondary">Here's what's happening with your inventory today.</p>
+                        </div>
+                        <button class="btn btn-primary" id="dashboard-add-product">
+                            <i data-lucide="plus"></i> New Product
+                        </button>
+                    </div>
+
+                    <!-- Statistics Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon bg-violet-light text-violet"><i data-lucide="box"></i></div>
+                            <div class="stat-details">
+                                <p class="stat-title">Total Products</p>
+                                <h3 class="stat-value" id="stat-total-products">0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon bg-cyan-light text-cyan"><i data-lucide="indian-rupee"></i></div>
+                            <div class="stat-details">
+                                <p class="stat-title">Inventory Value</p>
+                                <h3 class="stat-value" id="stat-total-value">₹0.00</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon bg-success-light text-success"><i data-lucide="tag"></i></div>
+                            <div class="stat-details">
+                                <p class="stat-title">Avg. Product Price</p>
+                                <h3 class="stat-value" id="stat-avg-price">₹0.00</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon bg-danger-light text-danger"><i data-lucide="alert-triangle"></i></div>
+                            <div class="stat-details">
+                                <p class="stat-title">Low Stock Alerts</p>
+                                <h3 class="stat-value" id="stat-low-stock">0</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <!-- Inventory Table Section -->
+                        <div class="inventory-section glass-card">
+                            <div class="section-header">
+                                <h2>Recent Products</h2>
+                                <button class="btn btn-text" id="view-all-inventory">View All</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="inventory-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Product Name</th>
+                                            <th>SKU</th>
+                                            <th>Category</th>
+                                            <th>Price</th>
+                                            <th>Stock</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-inventory-tbody">
+                                        <!-- Products dynamically populated here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Financial Calculator Section -->
+                        <div class="calculator-section glass-card">
+                            <div class="section-header">
+                                <h2>Tax & Discount Calculator</h2>
+                            </div>
+                            <div class="calculator-form">
+                                <div class="form-group">
+                                    <label for="calc-base-amount">Base Amount (₹)</label>
+                                    <input type="number" id="calc-base-amount" readonly>
+                                    <small class="text-secondary">Current Total Inventory Value</small>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="calc-tax">Tax (%)</label>
+                                        <input type="number" id="calc-tax" value="10" min="0" max="100">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="calc-discount">Discount (%)</label>
+                                        <input type="number" id="calc-discount" value="5" min="0" max="100">
+                                    </div>
+                                </div>
+                                <button class="btn btn-secondary w-100" id="btn-calculate">Calculate Final Price</button>
+                                
+                                <div class="calc-results mt-4">
+                                    <div class="result-row">
+                                        <span>Subtotal:</span>
+                                        <span id="res-subtotal">₹0.00</span>
+                                    </div>
+                                    <div class="result-row">
+                                        <span>Discount Amount:</span>
+                                        <span id="res-discount" class="text-success">-₹0.00</span>
+                                    </div>
+                                    <div class="result-row">
+                                        <span>Tax Amount:</span>
+                                        <span id="res-tax" class="text-danger">+₹0.00</span>
+                                    </div>
+                                    <div class="result-row total">
+                                        <span>Final Amount:</span>
+                                        <span id="res-final" class="text-violet">₹0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Full Inventory View -->
+                <section id="inventory-view" class="view-section d-none">
+                    <div class="section-header mb-4">
+                        <h1>Product Inventory</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-primary" id="inventory-add-product"><i data-lucide="plus"></i> Add Product</button>
+                        </div>
+                    </div>
+                    
+                    <div class="inventory-controls glass-card mb-4">
+                        <div class="control-group">
+                            <label>Filter By:</label>
+                            <select id="filter-category">
+                                <option value="all">All Categories</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="accessories">Accessories</option>
+                                <option value="furniture">Furniture</option>
+                            </select>
+                            <select id="filter-price-tier">
+                                <option value="all">All Prices</option>
+                                <option value="budget">Budget (< ₹50)</option>
+                                <option value="standard">Standard (₹50 - ₹199.99)</option>
+                                <option value="premium">Premium (>= ₹200)</option>
+                            </select>
+                            <select id="filter-stock">
+                                <option value="all">All Stock Status</option>
+                                <option value="in-stock">In Stock</option>
+                                <option value="low-stock">Low Stock (< 10)</option>
+                                <option value="out-of-stock">Out of Stock</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label>Sort By:</label>
+                            <select id="sort-inventory">
+                                <option value="newest">Recently Added</option>
+                                <option value="name-asc">Name (A-Z)</option>
+                                <option value="name-desc">Name (Z-A)</option>
+                                <option value="price-asc">Price (Low to High)</option>
+                                <option value="price-desc">Price (High to Low)</option>
+                                <option value="stock-asc">Stock (Low to High)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="inventory-table-wrapper glass-card">
+                        <div class="table-responsive">
+                            <table class="inventory-table full-width">
+                                <thead>
+                                    <tr>
+                                        <th>Product Info</th>
+                                        <th>Price Tier</th>
+                                        <th>Price</th>
+                                        <th>Stock</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="full-inventory-tbody">
+                                    <!-- Full inventory list here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="empty-state" class="empty-state d-none">
+                            <i data-lucide="package-x" class="empty-icon"></i>
+                            <h3>No products found</h3>
+                            <p>Try adjusting your search or filters.</p>
+                            <button class="btn btn-outline mt-3" id="btn-clear-filters">Clear Filters</button>
+                        </div>
+                        <div class="pagination">
+                            <!-- Pagination controls -->
+                            <button class="btn btn-outline btn-sm" id="prev-page" disabled>Previous</button>
+                            <span id="page-info">Page 1 of 1</span>
+                            <button class="btn btn-outline btn-sm" id="next-page" disabled>Next</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Analytics View -->
+                <section id="analytics-view" class="view-section d-none">
+                    <div class="section-header mb-4">
+                        <h1>Financial Analytics</h1>
+                    </div>
+                    
+                    <div class="charts-grid">
+                        <div class="chart-container glass-card">
+                            <h3>Inventory Value by Product</h3>
+                            <canvas id="valueChart"></canvas>
+                        </div>
+                        <div class="chart-container glass-card">
+                            <h3>Product Price Distribution</h3>
+                            <canvas id="priceTierChart"></canvas>
+                        </div>
+                        <div class="chart-container glass-card full-width">
+                            <h3>Stock Distribution</h3>
+                            <canvas id="stockChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="reports-section mt-4 glass-card">
+                        <h3>Detailed Reports</h3>
+                        <div class="reports-grid">
+                            <div class="report-box">
+                                <h4>Affordable Products (Under ₹200)</h4>
+                                <ul id="affordable-products-list" class="report-list"></ul>
+                            </div>
+                            <div class="report-box">
+                                <h4>Formatted Inventory Report</h4>
+                                <ul id="formatted-report-list" class="report-list"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- JS Concepts Lab View -->
+                <section id="concepts-lab-view" class="view-section d-none">
+                    <div class="section-header mb-4">
+                        <h1>JavaScript Concepts Lab</h1>
+                        <p class="text-secondary">Interactive demonstrations of core JavaScript concepts used in this project.</p>
+                    </div>
+
+                    <div class="lab-container">
+                        <div class="concepts-sidebar glass-card">
+                            <ul class="concept-list" id="concept-menu">
+                                <!-- Populated via JS -->
+                            </ul>
+                        </div>
+                        <div class="concept-content glass-card">
+                            <h2 id="concept-title">Select a concept</h2>
+                            <p id="concept-desc" class="text-secondary">Choose a concept from the sidebar to view its explanation and example code.</p>
+                            
+                            <div class="code-block-container mt-4 d-none" id="concept-code-container">
+                                <h4>Example Code:</h4>
+                                <pre><code id="concept-code"></code></pre>
+                                <button class="btn btn-primary mt-3" id="btn-run-concept">
+                                    <i data-lucide="play"></i> Run Example
+                                </button>
+                            </div>
+                            
+                            <div class="console-output mt-4 d-none" id="concept-console-container">
+                                <h4>Console Output:</h4>
+                                <div class="console-window" id="concept-console">
+                                    <!-- Output here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Add/Edit Product Modal -->
+    <div id="product-modal" class="modal-overlay d-none">
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <h2 id="modal-title">Add New Product</h2>
+                <button class="icon-btn close-modal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="product-form">
+                    <input type="hidden" id="product-id">
+                    <div class="form-group">
+                        <label for="product-name">Product Name *</label>
+                        <input type="text" id="product-name" required placeholder="e.g. Monitor">
+                        <span class="error-msg" id="err-name"></span>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="product-price">Price (₹) *</label>
+                            <input type="number" id="product-price" required min="0.01" step="0.01" placeholder="0.00">
+                            <span class="error-msg" id="err-price"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="product-quantity">Quantity *</label>
+                            <input type="number" id="product-quantity" required min="0" step="1" placeholder="0">
+                            <span class="error-msg" id="err-quantity"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-category">Category *</label>
+                        <select id="product-category" required>
+                            <option value="">Select Category</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Accessories">Accessories</option>
+                            <option value="Furniture">Furniture</option>
+                            <option value="Software">Software</option>
+                        </select>
+                        <span class="error-msg" id="err-category"></span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline close-modal">Cancel</button>
+                <button class="btn btn-primary" id="btn-save-product">Save Product</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="modal-overlay d-none">
+        <div class="modal glass-card modal-sm">
+            <div class="modal-header">
+                <h2>Confirm Deletion</h2>
+                <button class="icon-btn close-delete-modal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="delete-product-name"></strong>? This action cannot be undone.</p>
+                <input type="hidden" id="delete-product-id">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline close-delete-modal">Cancel</button>
+                <button class="btn btn-danger" id="btn-confirm-delete">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Product Modal -->
+    <div id="view-modal" class="modal-overlay d-none">
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <h2>Product Details</h2>
+                <button class="icon-btn close-view-modal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="product-details-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div><span class="text-secondary">Name:</span> <strong id="view-product-name" style="display: block; font-size: 1.1rem; margin-top: 4px;"></strong></div>
+                    <div><span class="text-secondary">SKU:</span> <strong id="view-product-sku" style="display: block; margin-top: 4px;"></strong></div>
+                    <div><span class="text-secondary">Category:</span> <div id="view-product-category" style="margin-top: 4px;"></div></div>
+                    <div><span class="text-secondary">Status:</span> <div id="view-product-status" style="margin-top: 4px;"></div></div>
+                    <div><span class="text-secondary">Unit Price:</span> <strong id="view-product-price" style="display: block; margin-top: 4px;"></strong></div>
+                    <div><span class="text-secondary">Quantity in Stock:</span> <strong id="view-product-qty" style="display: block; margin-top: 4px;"></strong></div>
+                    <div><span class="text-secondary">Total Inventory Value:</span> <strong id="view-product-value" class="text-violet" style="display: block; margin-top: 4px;"></strong></div>
+                    <div><span class="text-secondary">Date Added:</span> <strong id="view-product-date" style="display: block; margin-top: 4px;"></strong></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline close-view-modal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Confirmation Modal -->
+    <div id="reset-modal" class="modal-overlay d-none">
+        <div class="modal glass-card modal-sm">
+            <div class="modal-header">
+                <h2>Reset All Data</h2>
+                <button class="icon-btn close-reset-modal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to restore the default sample data? All your customized inventory will be lost.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline close-reset-modal">Cancel</button>
+                <button class="btn btn-danger" id="btn-confirm-reset">Reset Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
